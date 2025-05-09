@@ -1,4 +1,3 @@
-// TODO: Add AWS_SSH_PEM_KEY_NAME, AWS_SSH_RSA_KEY_NAME, CONFIG_NAME to the creds
 // [  workspace: string, dir?: string ]
 def prepare(Map params) {
     def workspace = params.workspace
@@ -63,7 +62,7 @@ def _newFile(Map params = [:]) {
     return fullPath
 }
 
-// [  buildScript: string, configureScript?: string, dir?: string ]
+// [  buildScript: string, configureScript?: string]
 def build(Map params) {
     steps.echo 'Configuring and building the container'
 
@@ -88,7 +87,7 @@ def build(Map params) {
 }
 
 // [
-//      container: [  workspace: string, dir: string, name: string, image: string, envFile?: string, tty?: bool],
+//      container: [  name: string, image: string, entryPoint?: string, envFile?: string, tty?: bool],
 //      test:      [
 //                      command?: ["echo", "me"],
 //                      params?: [ packages: string, cases: string, resultXML?: string, resultJSON?: string, tags?: string, timeout?: string ]
@@ -115,22 +114,7 @@ def run(Map config) {
         throw new Exception(errorMessage)
     }
 
-    // related to TODO1, remove after TODO1
-    // read comment for this function, related to TODO1
-    def publishArgs = _publishFromContainer( [workspace: config?.container.workspace, dir: config?.container.dir] )
-
-    // related to TODO1
-    // read comment for this function, related to TODO1
-    // testArgs << publishArgs
-
-    // without TODO1:
-    // def fullCommand = containerArgs + testArgs
-
-    def testCommand = testArgs.join(' ')
-
-    testCommand += publishArgs
-
-    def fullCommand = containerArgs + [ testCommand ]
+    def fullCommand = containerArgs + testArgs
 
     try {
         steps.sh(script: fullCommand.join(' '))
@@ -169,34 +153,15 @@ def _containerCommand(Map container) {
         args.add('-t')
     }
 
+    if (container?.entrypoint) {
+        args.addAll(['--entrypoint', container.entrypoint])
+    }
+
     if (container.image) {
         args.add(container.image)
     }
 
     return [args, container]
-}
-
-// TODO1 this is dockerfiles' entrypoint responsibility
-// we shouldn't need this and wrap test command with reporter script in the entrypoint
-// less variables for run func, more generic run func/command
-
-// [workspace: string, dir: string]
-def _publishFromContainer(Map containerParams) {
-    if (!containerParams.dir) {
-        containerParams.dir = '.'
-    }
-
-    def publishCommand = ''
-
-    if (env.QASE_TEST_RUN_ID) {
-        def builderPath =  "/root/${containerParams.workspace}/${containerParams.dir}/pipeline/scripts/build_qase_reporter.sh;"
-
-        def executablePath =  "/root/${containerParams.workspace}/${containerParams.dir}/reporter;"
-
-        publishCommand =  _wrapInDoubleQuotes(builderPath) + _wrapInDoubleQuotes(executablePath)
-    }
-
-    return publishCommand
 }
 
 // [

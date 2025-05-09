@@ -16,24 +16,20 @@ node {
 
         dir(workspace) {
                 stage('Prepare Credentials') {
-                    container.prepare(workspace: workspace, dir: 'validation')
+                    container.prepare(workspace: workspace)
                 }
                 stage('Configure and Build Container') {
-                    container.build(dir: 'validation', buildScript: 'build.sh', configureScript: 'configure.sh')
+                    container.build(buildScript: 'build.sh', configureScript: 'configure.sh')
                 }
                 stage('Run Tests') {
                     def names = generate.names()
 
                     def runParams = [
-                            container: [ workspace: workspace, dir: 'validation', name: names.container, image: names.image],
+                            container: [ name: names.container, image: names.image],
                             test:      [ params: [ packages: "github.com/rancher/tests/validation/${env.TEST_PACKAGE}", cases: env.GOTEST_TESTCASE, tags: env.TAGS ]]
                         ]
 
                     testContainer = container.run(runParams)
-                }
-
-                stage('Report Result') {
-                    result.reportFromContainer(workspace: workspace, name: testContainer.container.name, image: testContainer.container.image, dir: 'validation', resultsXML: testContainer.test.resultsXML)
                 }
                 stage('Remove container') {
                     container.remove([ [name: testContainer.container.name, image: testContainer.container.image] ])
