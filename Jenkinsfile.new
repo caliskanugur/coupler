@@ -7,7 +7,6 @@ node {
     def workspace
 
     def testContainer
-    def testParams
 
     property.useWithProperties(['AWS_SSH_PEM_KEY', 'AWS_SSH_PEM_KEY_NAME', 'AWS_SSH_RSA_KEY',  'AWS_SSH_RSA_KEY_NAME', 'CONFIG_NAME']) {
         stage('Checkout') {
